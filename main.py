@@ -1,4 +1,5 @@
 # ⭐ identical to main.py from cloudrun-app folder
+# 🚩 Added comment as trivial file change to trigger Cloud Build once committed to GH
 from google.cloud import bigquery
 from flask import Flask
 from flask import request
