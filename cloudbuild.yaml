@@ -1,0 +1,49 @@
+# ⭐ This file does the docker build, push, test and deploy steps of the Flask app to Cloud Run.
+# ⭐ This automates the steps we did with local bash commands earlier
+steps:
+# step 1: build app & tag it
+- name: 'gcr.io/cloud-builders/docker' # A GCP image containing CLI tools for Docker commands. 
+# NOTE: THis location is deprecated, but Google redirects to the new location automatically.
+# I tried to use the new location, as fouind online and avised by copilot, but it didn't work for me.
+  args: ['build', '-t', 'us-central1-docker.pkg.dev/umlops/gcr-umlops/demo-flask-app-cb1', '.'] # build command
+
+# step 2: push app to Artifact Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-central1-docker.pkg.dev/umlops/gcr-umlops/demo-flask-app-cb1']
+
+# step 3: run tests	
+# This Cloud Build step runs tests inside the built Docker image.
+# starts a Bash shell, and executes `python -m pytest` to run all Python tests.
+# This ensures the image passes all tests before deployment.
+# NOTE: pytest finds all files called test_*.py or *_test.py and runs them
+- name: 'us-central1-docker.pkg.dev/umlops/gcr-umlops/demo-flask-app-cb1'
+  entrypoint: 'bash'
+  args:
+   - '-c'
+   - |
+      python -m pytest
+
+# step 4: deploy app to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk' 
+# A GCP image containing CLI tools for gcloud commands. 
+# NOTE: THis location is deprecated, but Google redirects to the new location automatically.
+# I tried to use the new location, as fouind online and avised by copilot, but it didn't work for me.
+  entrypoint: gcloud
+  args:
+   - 'run'
+   - 'deploy'
+   - 'demo-flask-app-cb1'
+   - '--image'
+   - 'us-central1-docker.pkg.dev/umlops/gcr-umlops/demo-flask-app-cb1'
+   - '--region'
+   - 'us-central1'
+   - '--allow-unauthenticated'
+
+# This section tells Cloud Build to record the built Docker image as an output of the build process.
+# It makes the image available for later reference, deployment, or use in other build steps.
+images:
+- 'us-central1-docker.pkg.dev/umlops/gcr-umlops/demo-flask-app-cb1'
+
+# This section sets the build option to send all build logs only to Google Cloud Logging (not to the Cloud Build UI).
+options:
+  logging: CLOUD_LOGGING_ONLY
